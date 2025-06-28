@@ -36,9 +36,9 @@
             --accent-hover: #06b6d4; /* cyan-500 */
         }
         .theme-light {
-            --bg-primary: #f9fafb;
+            --bg-primary: #f3f4f6;
             --bg-secondary: #ffffff;
-            --bg-tertiary: #f3f4f6;
+            --bg-tertiary: #e5e7eb;
             --text-primary: #111827;
             --text-secondary: #4b5563;
         }
@@ -76,10 +76,15 @@
         .accent-bg { background-color: var(--accent-color); }
         .accent-bg-hover:hover { background-color: var(--accent-hover); }
         .accent-ring { ring-color: var(--accent-color); }
+        .icon-color { color: var(--text-primary); }
 
         #main-container {
             position: relative;
             z-index: 1;
+            transition: filter 0.3s ease-in-out;
+        }
+        #main-container.blurred {
+            filter: blur(5px) brightness(0.7);
         }
         #wallpaper-container {
             position: fixed;
@@ -135,6 +140,17 @@
             from { opacity: 1; transform: translateX(0); }
             to { opacity: 0; transform: translateX(100%); }
         }
+        
+        /* Settings Panel */
+        #settings-overlay {
+            transition: opacity 0.3s ease-in-out;
+        }
+        #settings-panel {
+            transition: transform 0.3s ease-in-out;
+        }
+        #settings-overlay.hidden #settings-panel {
+            transform: translateY(100%);
+        }
     </style>
 </head>
 <body class="text-white">
@@ -148,9 +164,6 @@
                 <h1 id="main-title" class="text-3xl md:text-4xl font-bold accent-text">Pencatat Keuangan</h1>
                 <p id="subtitle" class="text-app-secondary mt-2">Selamat datang!</p>
             </div>
-            <button id="settings-btn" class="p-2 rounded-full hover:bg-app-tertiary transition">
-                <i data-lucide="settings" class="w-6 h-6"></i>
-            </button>
         </header>
 
         <main class="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -221,9 +234,9 @@
                 <!-- Calendar View -->
                 <section class="bg-app-secondary p-6 rounded-2xl shadow-lg">
                     <div class="flex justify-between items-center mb-4">
-                        <button id="prev-month-btn" class="p-2 rounded-full hover:bg-app-tertiary"><i data-lucide="chevron-left"></i></button>
+                        <button id="prev-month-btn" class="p-2 rounded-full hover:bg-app-tertiary"><i data-lucide="chevron-left" class="icon-color"></i></button>
                         <h2 id="calendar-title" class="text-2xl font-semibold"></h2>
-                        <button id="next-month-btn" class="p-2 rounded-full hover:bg-app-tertiary"><i data-lucide="chevron-right"></i></button>
+                        <button id="next-month-btn" class="p-2 rounded-full hover:bg-app-tertiary"><i data-lucide="chevron-right" class="icon-color"></i></button>
                     </div>
                     <div id="calendar-grid" class="grid grid-cols-7 gap-1 text-center"></div>
                 </section>
@@ -245,6 +258,11 @@
         </main>
     </div>
 
+    <!-- Floating Action Button for Settings -->
+    <button id="open-settings-fab" class="fixed bottom-6 right-6 accent-bg accent-bg-hover text-white p-4 rounded-full shadow-lg z-20">
+        <i data-lucide="settings" class="w-6 h-6"></i>
+    </button>
+
     <!-- Modals -->
     <div id="name-modal" class="fixed inset-0 z-50 hidden items-center justify-center modal-backdrop">
         <div class="bg-app-secondary rounded-2xl shadow-2xl w-full max-w-sm m-4 p-6 text-center">
@@ -257,48 +275,76 @@
         </div>
     </div>
 
-    <div id="settings-modal" class="fixed inset-0 z-50 hidden items-center justify-center modal-backdrop">
-        <div class="bg-app-secondary rounded-2xl shadow-2xl w-full max-w-md m-4 p-6">
-             <div class="flex justify-between items-center border-b pb-3 mb-4" style="border-color: var(--bg-tertiary);">
-                <h3 class="text-2xl font-semibold">Pengaturan</h3>
-                <button id="close-settings-modal-btn" class="p-2 rounded-full hover:bg-app-tertiary">&times;</button>
-            </div>
-            
-            <!-- User Profile Section -->
-            <div class="mb-6">
-                <h4 class="text-lg font-semibold mb-3">Profil Pengguna</h4>
-                <div class="flex items-center justify-between bg-app-tertiary p-3 rounded-lg">
-                    <span id="current-user-name" class="font-medium"></span>
-                    <button id="change-name-btn" class="text-sm accent-text hover:underline">Ganti Nama</button>
+    <!-- NEW: Full Screen Settings Panel -->
+    <div id="settings-overlay" class="fixed inset-0 z-30 hidden bg-black/50 backdrop-blur-sm" style="opacity: 0;">
+        <div id="settings-panel" class="absolute bottom-0 left-0 right-0 bg-app-secondary rounded-t-3xl p-4 md:p-8 max-h-[90vh] overflow-y-auto">
+            <div class="max-w-4xl mx-auto">
+                 <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-3xl font-bold">Pengaturan</h2>
+                    <button id="close-settings-btn" class="p-2 rounded-full hover:bg-app-tertiary">
+                        <i data-lucide="x" class="w-6 h-6 icon-color"></i>
+                    </button>
                 </div>
-            </div>
+                
+                <!-- Tab Buttons -->
+                <div class="border-b border-app-tertiary mb-6">
+                    <nav class="flex -mb-px space-x-6">
+                        <button class="settings-tab-btn py-4 px-1 border-b-2 font-medium text-lg border-transparent" data-tab="tampilan">Tampilan</button>
+                        <button class="settings-tab-btn py-4 px-1 border-b-2 font-medium text-lg border-transparent" data-tab="kategori">Kategori</button>
+                        <button class="settings-tab-btn py-4 px-1 border-b-2 font-medium text-lg border-transparent" data-tab="data">Data & AI</button>
+                    </nav>
+                </div>
 
-            <!-- Theme Settings -->
-            <div class="mb-6">
-                <h4 class="text-lg font-semibold mb-3">Tema Warna</h4>
-                <div id="theme-selector" class="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    <button data-theme="dark" class="p-4 rounded-lg text-left" style="background-color: #111827; color: #f9fafb;">Dark</button>
-                    <button data-theme="light" class="p-4 rounded-lg text-left" style="background-color: #f9fafb; color: #111827;">Light</button>
-                    <button data-theme="sunset" class="p-4 rounded-lg text-left" style="background-color: #2d1a2e; color: #fde8e3;">Sunset</button>
-                    <button data-theme="vibrant" class="p-4 rounded-lg text-left" style="background-color: #0d1b2a; color: #e0e1dd;">Vibrant</button>
+                <!-- Tab Content -->
+                <div id="settings-tab-content">
+                    <!-- Tampilan Tab -->
+                    <div id="tab-tampilan" class="settings-tab-panel space-y-8">
+                        <div class="bg-app-tertiary p-6 rounded-2xl">
+                            <h3 class="text-xl font-semibold mb-4">Profil Pengguna</h3>
+                            <div class="flex items-center justify-between">
+                                <span id="current-user-name" class="font-medium text-lg"></span>
+                                <button id="change-name-btn" class="text-sm accent-text hover:underline">Ganti Nama</button>
+                            </div>
+                        </div>
+                        <div class="bg-app-tertiary p-6 rounded-2xl">
+                            <h3 class="text-xl font-semibold mb-4">Tema Warna</h3>
+                            <div id="theme-selector" class="grid grid-cols-2 gap-3">
+                                <button data-theme="dark" class="p-4 rounded-lg text-left" style="background-color: #111827; color: #f9fafb;">Dark</button>
+                                <button data-theme="light" class="p-4 rounded-lg text-left" style="background-color: #f9fafb; color: #111827;">Light</button>
+                                <button data-theme="sunset" class="p-4 rounded-lg text-left" style="background-color: #2d1a2e; color: #fde8e3;">Sunset</button>
+                                <button data-theme="vibrant" class="p-4 rounded-lg text-left" style="background-color: #0d1b2a; color: #e0e1dd;">Vibrant</button>
+                            </div>
+                        </div>
+                         <div class="bg-app-tertiary p-6 rounded-2xl">
+                            <h3 class="text-xl font-semibold mb-4">Wallpaper Latar</h3>
+                            <input type="text" id="wallpaper-url-input" class="w-full bg-app-primary p-3 rounded-lg" placeholder="Masukkan URL gambar...">
+                            <p class="text-xs text-app-secondary mt-2">Kosongkan untuk menghapus wallpaper.</p>
+                        </div>
+                    </div>
+                    <!-- Kategori Tab -->
+                    <div id="tab-kategori" class="settings-tab-panel hidden">
+                        <div class="bg-app-tertiary p-6 rounded-2xl">
+                            <h3 class="text-xl font-semibold mb-4">Kelola Kategori</h3>
+                            <div id="category-management-container"></div>
+                        </div>
+                    </div>
+                    <!-- Data & AI Tab -->
+                    <div id="tab-data" class="settings-tab-panel hidden space-y-8">
+                        <div class="bg-app-tertiary p-6 rounded-2xl">
+                            <h3 class="text-xl font-semibold mb-4">Koneksi AI (Gemini)</h3>
+                            <label for="api-key-input" class="block text-sm font-medium text-app-secondary mb-2">Kunci API Gemini</label>
+                            <input type="password" id="api-key-input" class="w-full bg-app-primary p-3 rounded-lg" placeholder="Masukkan kunci API Gemini milikmu">
+                            <p class="text-xs text-app-secondary mt-2">Kunci API-mu disimpan dengan aman di browser ini saja.</p>
+                        </div>
+                        <div class="bg-app-tertiary p-6 rounded-2xl">
+                            <h3 class="text-xl font-semibold mb-4 text-red-500">Manajemen Data</h3>
+                            <div class="space-y-4">
+                                <button id="delete-history-btn" class="w-full bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded-lg">Hapus Riwayat Transaksi</button>
+                                <button id="delete-all-data-btn" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg">Reset Aplikasi</button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            </div>
-            <!-- Wallpaper Settings -->
-            <div class="mb-6">
-                <h4 class="text-lg font-semibold mb-3">Wallpaper Latar</h4>
-                <input type="text" id="wallpaper-url-input" class="w-full bg-app-tertiary p-3 rounded-lg" placeholder="Masukkan URL gambar...">
-                <p class="text-xs text-app-secondary mt-2">Kosongkan untuk menghapus wallpaper.</p>
-            </div>
-            <!-- Category Management -->
-            <div class="mb-6">
-                 <h4 class="text-lg font-semibold mb-3">Kelola Kategori</h4>
-                 <div id="category-management-container"></div>
-            </div>
-            <!-- Danger Zone -->
-            <div>
-                 <h4 class="text-lg font-semibold mb-3 text-red-500">Zona Berbahaya</h4>
-                 <button id="delete-all-data-btn" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg">Hapus Semua Data</button>
-                 <p class="text-xs text-app-secondary mt-2">Tindakan ini tidak dapat diurungkan.</p>
             </div>
         </div>
     </div>
@@ -313,6 +359,7 @@
         let userName = '';
         let currentTheme = 'dark';
         let currentWallpaper = '';
+        let userApiKey = '';
         let currentDate = new Date();
         let selectedDate = null;
         let expenseChart = null;
@@ -351,8 +398,11 @@
             userName = localStorage.getItem('keuangan_userName') || '';
             currentTheme = localStorage.getItem('keuangan_theme') || 'dark';
             currentWallpaper = localStorage.getItem('keuangan_wallpaper') || '';
+            userApiKey = localStorage.getItem('keuangan_apiKey') || '';
+            
             applyTheme(currentTheme);
             applyWallpaper(currentWallpaper);
+            document.getElementById('api-key-input').value = userApiKey;
         }
 
         function loadDataFromLocalStorage() {
@@ -387,16 +437,15 @@
         // ===================================
         function setupEventListeners() {
             document.getElementById('name-form').addEventListener('submit', handleNameSubmit);
-            document.getElementById('settings-btn').addEventListener('click', () => {
-                document.getElementById('current-user-name').textContent = userName;
-                document.getElementById('wallpaper-url-input').value = currentWallpaper;
-                renderCategoryManagement();
-                document.getElementById('settings-modal').classList.remove('hidden');
+            document.getElementById('open-settings-fab').addEventListener('click', openSettings);
+            document.getElementById('close-settings-btn').addEventListener('click', closeSettings);
+            document.getElementById('settings-overlay').addEventListener('click', (e) => {
+                if (e.target.id === 'settings-overlay') closeSettings();
             });
-            document.getElementById('close-settings-modal-btn').addEventListener('click', () => document.getElementById('settings-modal').classList.add('hidden'));
             document.getElementById('transaction-form').addEventListener('submit', handleAddTransaction);
             document.getElementById('theme-selector').addEventListener('click', handleThemeChange);
             document.getElementById('wallpaper-url-input').addEventListener('change', handleWallpaperChange);
+            document.getElementById('api-key-input').addEventListener('change', handleApiKeyChange);
             document.getElementById('prev-month-btn').addEventListener('click', () => changeMonth(-1));
             document.getElementById('next-month-btn').addEventListener('click', () => changeMonth(1));
             document.getElementById('calendar-grid').addEventListener('click', handleDateClick);
@@ -405,14 +454,59 @@
             document.getElementById('type-expense-btn').addEventListener('click', () => switchTransactionType('expense'));
             document.getElementById('export-excel-btn').addEventListener('click', exportToExcel);
             document.getElementById('change-name-btn').addEventListener('click', handleChangeName);
+            document.getElementById('delete-history-btn').addEventListener('click', handleDeleteHistory);
             document.getElementById('delete-all-data-btn').addEventListener('click', handleDeleteAllData);
             document.getElementById('description').addEventListener('input', handleDescriptionInput);
             document.getElementById('ai-insight-btn').addEventListener('click', generateAiInsight);
+            
+            document.querySelectorAll('.settings-tab-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const tabId = e.target.dataset.tab;
+                    document.querySelectorAll('.settings-tab-btn').forEach(b => b.classList.remove('accent-text', 'border-accent-color'));
+                    e.target.classList.add('accent-text', 'border-accent-color');
+                    
+                    document.querySelectorAll('.settings-tab-panel').forEach(p => p.classList.add('hidden'));
+                    document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+                });
+            });
         }
 
         // ===================================
         // Handlers
         // ===================================
+        function openSettings() {
+            const overlay = document.getElementById('settings-overlay');
+            const panel = document.getElementById('settings-panel');
+            document.getElementById('main-container').classList.add('blurred');
+            document.getElementById('open-settings-fab').classList.add('hidden');
+            
+            document.getElementById('current-user-name').textContent = userName;
+            document.getElementById('wallpaper-url-input').value = currentWallpaper;
+            renderCategoryManagement();
+            
+            overlay.classList.remove('hidden');
+            setTimeout(() => {
+                overlay.style.opacity = '1';
+                panel.style.transform = 'translateY(0)';
+            }, 10);
+
+            // Activate first tab by default
+            document.querySelector('.settings-tab-btn[data-tab="tampilan"]').click();
+        }
+
+        function closeSettings() {
+            const overlay = document.getElementById('settings-overlay');
+            const panel = document.getElementById('settings-panel');
+            document.getElementById('main-container').classList.remove('blurred');
+            document.getElementById('open-settings-fab').classList.remove('hidden');
+
+            overlay.style.opacity = '0';
+            panel.style.transform = 'translateY(100%)';
+            setTimeout(() => {
+                overlay.classList.add('hidden');
+            }, 300);
+        }
+
         function handleNameSubmit(e) {
             e.preventDefault();
             const nameInput = document.getElementById('name-input');
@@ -430,24 +524,43 @@
                 userName = newName.trim();
                 localStorage.setItem('keuangan_userName', userName);
                 updateWelcomeMessage();
-                document.getElementById('current-user-name').textContent = userName;
                 showToast('Nama berhasil diubah!', 'success');
             }
         }
 
+        function handleDeleteHistory() {
+             showConfirmationModal(
+                'Hapus Riwayat Transaksi?',
+                'Tindakan ini akan menghapus semua data transaksi, tapi kategori dan pengaturan lain akan tetap ada. Anda yakin?',
+                () => {
+                    transactions = [];
+                    localStorage.removeItem('keuangan_transactions_v4');
+                    renderAll();
+                    showToast('Semua riwayat transaksi berhasil dihapus.', 'success');
+                }
+            );
+        }
+
         function handleDeleteAllData() {
             showConfirmationModal(
-                'Hapus Semua Data?',
-                'Tindakan ini akan menghapus semua data transaksi dan kategori secara permanen. Anda yakin?',
+                'Reset Aplikasi?',
+                'Tindakan ini akan menghapus SEMUA data (transaksi, kategori, nama, tema, dll) dan mengembalikan aplikasi ke kondisi awal. Anda yakin?',
                 () => {
                     transactions = [];
                     categories = [];
+                    userName = '';
                     localStorage.removeItem('keuangan_transactions_v4');
                     localStorage.removeItem('keuangan_categories_v4');
+                    localStorage.removeItem('keuangan_userName');
+                    localStorage.removeItem('keuangan_theme');
+                    localStorage.removeItem('keuangan_wallpaper');
+                    localStorage.removeItem('keuangan_apiKey');
                     loadDataFromLocalStorage(); // to re-init default categories
+                    loadSettings();
                     renderAll();
-                    document.getElementById('settings-modal').classList.add('hidden');
-                    showToast('Semua data berhasil dihapus.', 'success');
+                    closeSettings();
+                    document.getElementById('name-modal').classList.remove('hidden');
+                    showToast('Aplikasi berhasil di-reset.', 'success');
                 }
             );
         }
@@ -464,6 +577,12 @@
             const url = e.target.value.trim();
             applyWallpaper(url);
             localStorage.setItem('keuangan_wallpaper', url);
+        }
+
+        function handleApiKeyChange(e) {
+            userApiKey = e.target.value.trim();
+            localStorage.setItem('keuangan_apiKey', userApiKey);
+            showToast('Kunci API berhasil disimpan!', 'success');
         }
 
         function handleAddTransaction(e) {
@@ -489,7 +608,7 @@
                 showToast(`Pemasukan ${formatCurrency(newTransaction.amount)} berhasil ditambahkan!`, 'success');
             } else {
                 expenseSound.triggerAttackRelease("C3", "8n", Tone.now());
-                showToast(`Pengeluaran ${formatCurrency(newTransaction.amount)} ditambahkan.`, 'info');
+                showToast(`Pengeluaran ${formatCurrency(newTransaction.amount)} ditambahkan.`, 'expense');
             }
 
             const balanceEl = document.getElementById('balance');
@@ -551,6 +670,20 @@
             renderCategoryManagement();
         }
 
+        function handleEditCategory(id) {
+            const category = categories.find(c => c.id === id);
+            if (!category) return;
+            
+            const newName = prompt(`Ubah nama kategori "${category.name}":`, category.name);
+            if (newName && newName.trim() !== '') {
+                category.name = newName.trim();
+                saveCategoriesToLocalStorage();
+                renderAll();
+                renderCategoryManagement();
+                showToast('Kategori berhasil diubah!', 'success');
+            }
+        }
+
         // ===================================
         // Rendering
         // ===================================
@@ -566,6 +699,7 @@
         function updateWelcomeMessage() {
             document.getElementById('main-title').textContent = `Dashboard Keuangan`;
             document.getElementById('subtitle').textContent = `Selamat datang, ${userName}!`;
+            document.getElementById('current-user-name').textContent = userName;
         }
 
         function applyTheme(theme) {
@@ -672,7 +806,7 @@
                     </div>
                     <div class="flex items-center gap-4">
                         <span class="font-bold text-lg ${isIncome ? 'accent-text' : 'text-red-400'}">${isIncome ? '+' : '-'} ${formatCurrency(t.amount)}</span>
-                        <button class="delete-btn text-app-secondary hover:text-white" data-id="${t.id}"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                        <button class="delete-btn p-2 text-app-secondary hover:text-white" data-id="${t.id}"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                     </div>`;
                 listEl.appendChild(item);
             });
@@ -794,7 +928,10 @@
                         <span class="font-semibold">${cat.name}</span>
                         <span class="ml-2 text-xs font-medium px-2 py-0.5 rounded-full ${cat.type === 'income' ? 'bg-cyan-900 text-cyan-300' : 'bg-red-900 text-red-300'}">${cat.type === 'income' ? 'Pemasukan' : 'Pengeluaran'}</span>
                     </div>
-                    <button class="delete-category-btn text-app-secondary hover:text-white" data-id="${cat.id}"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                    <div class="flex items-center gap-1">
+                        <button class="edit-category-btn p-2 text-app-secondary hover:text-white" data-id="${cat.id}"><i data-lucide="pencil" class="w-4 h-4"></i></button>
+                        <button class="delete-category-btn p-2 text-app-secondary hover:text-white" data-id="${cat.id}"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                    </div>
                 `;
                 listEl.appendChild(item);
             });
@@ -802,8 +939,9 @@
             safeCreateIcons();
             
             container.querySelector('#add-category-form').addEventListener('submit', handleAddCategory);
+            container.querySelectorAll('.edit-category-btn').forEach(btn => btn.addEventListener('click', (e) => handleEditCategory(e.currentTarget.dataset.id)));
             container.querySelectorAll('.delete-category-btn').forEach(btn => btn.addEventListener('click', (e) => {
-                const id = e.currentTarget.getAttribute('data-id');
+                const id = e.currentTarget.dataset.id;
                 showConfirmationModal('Konfirmasi Hapus', 'Yakin ingin menghapus kategori ini?', () => handleDeleteCategory(id));
             }));
         }
@@ -842,7 +980,7 @@
                 }
             } catch (error) {
                 console.error("AI category suggestion failed:", error);
-                showToast('Gagal mendapatkan saran AI.', 'error');
+                showToast(error.message, 'error');
             } finally {
                 loader.classList.add('hidden');
             }
@@ -878,6 +1016,7 @@
                 console.error("AI insight generation failed:", error);
                 resultEl.textContent = "Gagal menghasilkan analisis. Coba lagi nanti.";
                 resultEl.classList.remove('hidden');
+                showToast(error.message, 'error');
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = '<i data-lucide="sparkles" class="w-5 h-5"></i> Minta Analisis AI';
@@ -886,8 +1025,11 @@
         }
 
         async function callGemini(prompt) {
-            const apiKey = ""; // Leave empty
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+            const key = localStorage.getItem('keuangan_apiKey') || "";
+            if (!key) {
+                throw new Error("Kunci API Gemini belum diatur di Pengaturan.");
+            }
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`;
             const payload = { contents: [{ parts: [{ text: prompt }] }] };
             const response = await fetch(apiUrl, {
                 method: 'POST',
@@ -948,6 +1090,10 @@
                 case 'error':
                     bgColor = 'bg-red-600';
                     iconHTML = `<i data-lucide="x-circle" class="w-6 h-6 text-white"></i>`;
+                    break;
+                case 'expense':
+                    bgColor = 'bg-red-500';
+                    iconHTML = `<i data-lucide="arrow-down" class="w-6 h-6 text-white"></i>`;
                     break;
                 default: // info
                     bgColor = 'bg-app-tertiary';
