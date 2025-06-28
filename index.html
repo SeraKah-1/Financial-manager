@@ -154,8 +154,16 @@
         import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, collection, addDoc, onSnapshot, deleteDoc, getDocs, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+          apiKey: "AIzaSyBR1HGdnFLV_hU54UmmL9EmhARrjRPRaM",
+          authDomain: "financial-manager-27ee3.firebaseapp.com",
+          projectId: "financial-manager-27ee3",
+          storageBucket: "financial-manager-27ee3.appspot.com",
+          messagingSenderId: "587236515011",
+          appId: "1:587236515011:web:8aaffe4bb9c242c11f9676",
+          measurementId: "G-7634S588D6"
+        };
 
         let app, db, auth, userId;
         let transactions = [];
@@ -167,8 +175,10 @@
         // INITIALIZATION
         // ===================================================================================
         document.addEventListener('DOMContentLoaded', () => {
-            if (Object.keys(firebaseConfig).length === 0) {
-                console.error("Firebase config is not available.");
+            if (Object.keys(firebaseConfig).length === 0 || !firebaseConfig.apiKey) {
+                console.error("Firebase config is not available or invalid.");
+                // Optionally, hide the login button if config is missing
+                document.getElementById('login-view').innerHTML = '<p class="text-center text-red-400">Konfigurasi Firebase tidak valid. Aplikasi tidak dapat dijalankan.</p>';
                 return;
             }
 
@@ -215,7 +225,12 @@
                 await signInWithPopup(auth, provider);
             } catch (error) {
                 console.error("Error signing in with Google:", error);
-                showNotification('Login Gagal', 'Tidak dapat login dengan Google. Silakan coba lagi.', 'error');
+                // More specific error for popup closed
+                if (error.code === 'auth/popup-closed-by-user') {
+                    showNotification('Info', 'Jendela login ditutup sebelum selesai.', 'info');
+                } else {
+                    showNotification('Login Gagal', 'Tidak dapat login dengan Google. Pastikan domain sudah di-authorize di Firebase Console.', 'error');
+                }
             }
         }
 
@@ -233,14 +248,14 @@
         function setupListeners() {
             if (!userId) return;
 
-            const transactionsCollection = collection(db, `artifacts/${appId}/users/${userId}/transactions`);
+            const transactionsCollection = collection(db, `users/${userId}/transactions`);
             onSnapshot(transactionsCollection, (snapshot) => {
                 transactions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 transactions.sort((a, b) => new Date(b.date) - new Date(a.date));
                 renderAll();
             });
 
-            const categoriesCollection = collection(db, `artifacts/${appId}/users/${userId}/categories`);
+            const categoriesCollection = collection(db, `users/${userId}/categories`);
             onSnapshot(categoriesCollection, (snapshot) => {
                 if (snapshot.empty) {
                     addDefaultCategories();
@@ -259,7 +274,7 @@
                 { name: 'Tagihan', type: 'expense' }, { name: 'Belanja', type: 'expense' },
                 { name: 'Hiburan', type: 'expense' }, { name: 'Kesehatan', type: 'expense' },
             ];
-            const categoriesCollection = collection(db, `artifacts/${appId}/users/${userId}/categories`);
+            const categoriesCollection = collection(db, `users/${userId}/categories`);
             const existingCategoriesSnapshot = await getDocs(categoriesCollection);
             if (existingCategoriesSnapshot.empty) {
                 for (const cat of defaultCategories) { await addDoc(categoriesCollection, cat); }
@@ -423,7 +438,7 @@
                 return;
             }
             try {
-                await addDoc(collection(db, `artifacts/${appId}/users/${userId}/transactions`), newTransaction);
+                await addDoc(collection(db, `users/${userId}/transactions`), newTransaction);
                 document.getElementById('transaction-form').reset();
                 setDateToToday();
                 switchTransactionType('income');
@@ -434,7 +449,7 @@
 
         async function handleDeleteTransaction(id) {
             if (!userId) return;
-            try { await deleteDoc(doc(db, `artifacts/${appId}/users/${userId}/transactions`, id)); } 
+            try { await deleteDoc(doc(db, `users/${userId}/transactions`, id)); } 
             catch (error) { showNotification('Gagal', 'Gagal menghapus transaksi.', 'error'); }
         }
         
@@ -449,14 +464,14 @@
                 return;
             }
             try {
-                await addDoc(collection(db, `artifacts/${appId}/users/${userId}/categories`), { name, type });
+                await addDoc(collection(db, `users/${userId}/categories`), { name, type });
                 document.getElementById('new-category-name').value = '';
             } catch (error) { showNotification('Gagal', 'Gagal menambahkan kategori.', 'error'); }
         }
 
         async function handleDeleteCategory(id) {
             if (!userId) return;
-            try { await deleteDoc(doc(db, `artifacts/${appId}/users/${userId}/categories`, id)); } 
+            try { await deleteDoc(doc(db, `users/${userId}/categories`, id)); } 
             catch (error) { showNotification('Gagal', 'Gagal menghapus kategori.', 'error'); }
         }
 
